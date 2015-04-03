@@ -16,20 +16,16 @@ public class SDKUtils {
 		try {
 			info = context.getPackageManager().getApplicationInfo(
 					context.getPackageName(), PackageManager.GET_META_DATA);
-			String gameId= info.metaData.getString("zd_appid");
-			String chanelId= info.metaData.getString("zd_chanelId");
-			String merchantId= info.metaData.getString("zd_merchantId");
-			if (gameId!= null & gameId.startsWith("zd_appid:")) {
+			String gameId= info.metaData.getString("zmappid");
+			String chanelId= info.metaData.getString("zmchanelId");
+			if (gameId!= null & gameId.startsWith("zmappid:")) {
 				model.gameId=gameId.split(":")[1];
 			}
 
-			if (chanelId!= null & chanelId.startsWith("zd_chanelId:")) {
+			if (chanelId!= null & chanelId.startsWith("zmchanelId:")) {
 				model.chanelId=chanelId.split(":")[1];
 			}
 
-			if (merchantId!= null & merchantId.startsWith("zd_merchantId:")) {
-                model.merchantId = merchantId.split(":")[1] ;
-			}
 			return model;
 		} catch (NameNotFoundException e) {
 			// TODO Auto-generated catch block

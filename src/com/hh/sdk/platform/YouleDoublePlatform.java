@@ -1,6 +1,7 @@
 package com.hh.sdk.platform;
 
 import android.app.Activity;
+import com.hh.sdk.ICallback;
 import com.hh.sdk.model.InitInfo;
 import com.hh.sdk.model.LocationInfo;
 import com.hh.sdk.service.*;
@@ -32,12 +33,12 @@ public class YouleDoublePlatform implements Iplatform {
     }
 
     @Override
-    public void pay(Activity activity, int money, final String order, String extInfo, final OrderGenerateService.OrderGenerateListener listener) {
+    public void pay(Activity activity, int money, final String order, String extInfo,  final ICallback listener) {
         InitInfo initInfo = SDKUtils.getMeteData(activity);
         mPayService.requestPay( money, phoneInformation.getDeviceCode(), phoneInformation.getImsi(), province, new PayService.IPayListener() {
             @Override
             public void paySuccess(int money) {
-               listener.onSuccess(order,money);
+               listener.paySuccess(order, money);
             }
 
             @Override
@@ -46,8 +47,7 @@ public class YouleDoublePlatform implements Iplatform {
 
             @Override
             public void payFail(int money) {
-                listener.onFail(order,money+"");
-
+                listener.payFail(order,money);
             }
         });
     }

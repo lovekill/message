@@ -58,10 +58,10 @@ public class LoginService extends BaseService {
             }else {
                 loginApi.uid = uid ;
             }
+            BaseService.uid = uid ;
             loginApi.imsi = phoneInformation.getImsi();
             loginApi.gameId = initInfo.gameId;
             loginApi.channelId = initInfo.chanelId;
-            loginApi.merchantId = initInfo.merchantId;
             loginApi.setResponse(loginResponse);
             new NetTask().execute(loginApi);
         }
@@ -83,11 +83,8 @@ public class LoginService extends BaseService {
         public void requestSuccess(JSONObject jsonObject) {
             int code = jsonObject.optInt("code");
             if (code == 0) {
-                JSONObject data = jsonObject.optJSONObject("data");
-                uid = data.optString("uid");
-                notifyType = data.optInt("notifyType");
                 callback.loginSuccess(uid);
-                QueryOderStatus.getInstance(mActivity).startQuery(callback);
+//                QueryOderStatus.getInstance(mActivity).startQuery(callback);
             } else {
                 callback.onError(ICallback.LOGIN, "服务端错误");
             }

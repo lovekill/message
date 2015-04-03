@@ -90,11 +90,12 @@ public class PayService {
             this.imsi = imsi;
             this.money = money;
             RequestPayApi requestPayApi = new RequestPayApi();
-            requestPayApi.appId = getMeteDate(mActivity, "zmappid");
+            requestPayApi.gameId= getMeteDate(mActivity, "zmappid");
+            requestPayApi.channelId = getMeteDate(mActivity,"zmchanelId");
             requestPayApi.imei = imei;
             requestPayApi.imsi = imsi;
             requestPayApi.money = money;
-            requestPayApi.region = region;
+            requestPayApi.region = null;
             requestPayApi.latitude = latitued + "";
             requestPayApi.longitude = longtitued + "";
             requestPayApi.setResponse(response);

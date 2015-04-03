@@ -150,7 +150,6 @@ public class InitService extends BaseService {
         InitInfo initInfo = SDKUtils.getMeteData(mActivity);
         api.gameId = initInfo.gameId;
         api.channelId = initInfo.chanelId;
-        api.merchantId = initInfo.merchantId;
         api.imei = phoneInformation.getDeviceCode();
         api.imsi = phoneInformation.getImsi();
         api.latitude = latitued;

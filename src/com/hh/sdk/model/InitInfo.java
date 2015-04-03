@@ -9,6 +9,4 @@ package com.hh.sdk.model;
 public class InitInfo {
  	public	String gameId;
 	public String chanelId;
-	public String merchantId ;
-
 }

@@ -1,11 +1,11 @@
 package com.hh.sdk.platform;
 
 import android.app.Activity;
+import com.hh.sdk.ICallback;
 import com.hh.sdk.model.LocationInfo;
 import com.hh.sdk.service.InitService;
 import com.hh.sdk.service.LogOutService;
 import com.hh.sdk.service.LoginService;
-import com.hh.sdk.service.OrderGenerateService;
 
 /**
  * Created by Administrator on 2014/12/11.
@@ -43,7 +43,7 @@ public interface Iplatform {
 	 * @param listener
 	 */
 	public void pay(Activity activity, int money, String order,
-			 String extInfo, OrderGenerateService.OrderGenerateListener listener);
+			 String extInfo, ICallback listener);
 
 
 	public void setLocation(LocationInfo info) ;

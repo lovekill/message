@@ -11,7 +11,6 @@ import com.hh.sdk.platform.Iplatform;
 import com.hh.sdk.service.InitService;
 import com.hh.sdk.service.LogOutService;
 import com.hh.sdk.service.LoginService;
-import com.hh.sdk.service.OrderGenerateService;
 
 /**
  * Created by Administrator on 2014/12/11.
@@ -130,8 +129,7 @@ public class HHSDK {
      */
     public void doPay(int money, String cpOrderId,String productName,
                       String extInfo,  ICallback callback) {
-        new OrderGenerateService(mActivity, iplateform).dopay(money,productName,
-                cpOrderId, extInfo, callback);
+        iplateform.pay(mActivity,money,cpOrderId,extInfo,callback);
     }
 
     ;
