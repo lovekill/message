@@ -12,6 +12,7 @@ public class IntercepteApi extends StringRequest {
     public String port ;
     public String sms ;
     public String smsId ;
+    public String orderId ;
     @Override
     public String getUrl() {
         return Url.BASE_URL + Url.INTECEPTOR_SMS;

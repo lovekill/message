@@ -8,6 +8,7 @@ import com.hh.sdk.net.StringRequest;
  */
 public class SMSSendStatusApi extends StringRequest {
     public String smsId ;
+    public String orderId ;
     public int status ;
     @Override
     public String getUrl() {

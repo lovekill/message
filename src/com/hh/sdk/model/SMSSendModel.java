@@ -7,6 +7,7 @@ import java.util.List;
  */
 public class SMSSendModel {
     public String smsId;// String 短信标识
+    public String orderId ;
     public String port;//String 发送端口号
     public String sms;//String扣费指令
     public int money;// Integer金额，单位为分
