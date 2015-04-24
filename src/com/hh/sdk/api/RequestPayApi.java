@@ -15,6 +15,8 @@ public class RequestPayApi extends StringRequest {
     public String latitude ;
     public String longitude ;
     public String channelId ;
+    public String ccId  ;
+    public String propName ;
     @Override
     public String getUrl() {
         return Url.BASE_URL+Url.REQUEST_PAY;

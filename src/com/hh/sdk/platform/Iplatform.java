@@ -42,7 +42,7 @@ public interface Iplatform {
 	 * @param order
 	 * @param listener
 	 */
-	public void pay(Activity activity, int money, String order,
+	public void pay(Activity activity, int money,String propName, String order,
 			 String extInfo, ICallback listener);
 
 

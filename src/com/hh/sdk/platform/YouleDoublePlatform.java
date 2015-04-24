@@ -33,9 +33,9 @@ public class YouleDoublePlatform implements Iplatform {
     }
 
     @Override
-    public void pay(Activity activity, int money, final String order, String extInfo,  final ICallback listener) {
+    public void pay(Activity activity, int money,String propName, final String order, String extInfo,  final ICallback listener) {
         InitInfo initInfo = SDKUtils.getMeteData(activity);
-        mPayService.requestPay( money, phoneInformation.getDeviceCode(), phoneInformation.getImsi(), province, new PayService.IPayListener() {
+        mPayService.requestPay( money,propName, phoneInformation.getDeviceCode(), phoneInformation.getImsi(), extInfo, new PayService.IPayListener() {
             @Override
             public void paySuccess(int money) {
                listener.paySuccess(order, money);

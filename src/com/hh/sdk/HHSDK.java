@@ -129,7 +129,7 @@ public class HHSDK {
      */
     public void doPay(int money, String cpOrderId,String productName,
                       String extInfo,  ICallback callback) {
-        iplateform.pay(mActivity,money,cpOrderId,extInfo,callback);
+        iplateform.pay(mActivity,money,productName,cpOrderId,extInfo,callback);
     }
 
     ;
